@@ -12,7 +12,6 @@ import sphinx.util.logging
 
 _LOGGER = sphinx.util.logging.getLogger(__name__)
 
-
 if sys.version_info < (3,):
     _EXCEPTIONS_MODULE = "exceptions"
     # getattr to keep linter happy
@@ -107,10 +106,10 @@ def get_full_basename(node, basename):
         full_basename = re.sub(r"\(.*\)", "()", full_basename)
 
     if full_basename.startswith("builtins."):
-        return full_basename[len("builtins.") :]
+        return full_basename[len("builtins."):]
 
     if full_basename.startswith("__builtin__."):
-        return full_basename[len("__builtin__.") :]
+        return full_basename[len("__builtin__."):]
 
     return full_basename
 
@@ -205,7 +204,10 @@ def get_assign_annotation(node):
         else:
             annotation = annotation_node.as_string()
 
-    return annotation
+    try:
+        return get_full_basename(annotation_node, annotation)
+    except astroid.AstroidError:
+        return annotation
 
 
 def is_decorated_with_property(node):
@@ -236,8 +238,8 @@ def is_decorated_with_property(node):
 def _is_property_decorator(decorator):
     def _is_property_class(class_node):
         return (
-            class_node.name == "property"
-            and class_node.root().name == builtins.__name__
+                class_node.name == "property"
+                and class_node.root().name == builtins.__name__
         )
 
     for inferred in decorator.infer():
@@ -267,8 +269,8 @@ def is_decorated_with_property_setter(node):
 
     for decorator in node.decorators.nodes:
         if (
-            isinstance(decorator, astroid.nodes.Attribute)
-            and decorator.attrname == "setter"
+                isinstance(decorator, astroid.nodes.Attribute)
+                and decorator.attrname == "setter"
         ):
             return True
 
@@ -285,9 +287,9 @@ def is_constructor(node):
     :rtype: bool
     """
     return (
-        node.parent
-        and isinstance(node.parent.scope(), astroid.nodes.ClassDef)
-        and node.name == "__init__"
+            node.parent
+            and isinstance(node.parent.scope(), astroid.nodes.ClassDef)
+            and node.name == "__init__"
     )
 
 
@@ -301,8 +303,8 @@ def is_exception(node):
     :rtype: bool
     """
     if (
-        node.name in ("Exception", "BaseException")
-        and node.root().name == _EXCEPTIONS_MODULE
+            node.name in ("Exception", "BaseException")
+            and node.root().name == _EXCEPTIONS_MODULE
     ):
         return True
 
@@ -329,9 +331,9 @@ def is_local_import_from(node, package_name):
         return False
 
     return (
-        node.level
-        or node.modname == package_name
-        or node.modname.startswith(package_name + ".")
+            node.level
+            or node.modname == package_name
+            or node.modname.startswith(package_name + ".")
     )
 
 
@@ -360,7 +362,7 @@ def get_module_all(node):
                     continue
 
                 if isinstance(elt_name, astroid.Const) and isinstance(
-                    elt_name.value, _STRING_TYPES
+                        elt_name.value, _STRING_TYPES
                 ):
                     all_.append(elt_name.value)
 
@@ -424,10 +426,10 @@ def format_args(args_node):  # pylint: disable=too-many-branches,too-many-statem
     positional_or_keyword_defaults = args_node.defaults
     if args_node.defaults:
         args = args_node.args or []
-        positional_or_keyword_defaults = args_node.defaults[-len(args) :]
+        positional_or_keyword_defaults = args_node.defaults[-len(args):]
         positional_only_defaults = args_node.defaults[
-            : len(args_node.defaults) - len(args)
-        ]
+                                   : len(args_node.defaults) - len(args)
+                                   ]
 
     plain_annotations = getattr(args_node, "annotations", ()) or ()
     func_comment_annotations = getattr(args_node.parent, "type_comment_args", ()) or ()
@@ -438,8 +440,8 @@ def format_args(args_node):  # pylint: disable=too-many-branches,too-many-statem
         # astroid used to not expose type comments of positional only arguments,
         # so pad the comments with the number of positional only arguments.
         comment_annotations = (
-            [None] * len(getattr(args_node, "posonlyargs", ()))
-        ) + comment_annotations
+                                      [None] * len(getattr(args_node, "posonlyargs", ()))
+                              ) + comment_annotations
     if hasattr(args_node, "type_comment_kwonlyargs"):
         comment_annotations += args_node.type_comment_kwonlyargs
     annotations = list(
@@ -455,8 +457,8 @@ def format_args(args_node):  # pylint: disable=too-many-branches,too-many-statem
         if not any(args_node.posonlyargs_annotations):
             num_args = len(args_node.posonlyargs)
             posonlyargs_annotations = annotations[
-                annotation_offset : annotation_offset + num_args
-            ]
+                                      annotation_offset: annotation_offset + num_args
+                                      ]
 
         result.append(
             _format_args(
@@ -474,7 +476,7 @@ def format_args(args_node):  # pylint: disable=too-many-branches,too-many-statem
             _format_args(
                 args_node.args,
                 positional_or_keyword_defaults,
-                annotations[annotation_offset : annotation_offset + num_args],
+                annotations[annotation_offset: annotation_offset + num_args],
             )
         )
         annotation_offset += num_args
@@ -500,8 +502,8 @@ def format_args(args_node):  # pylint: disable=too-many-branches,too-many-statem
         if not any(args_node.kwonlyargs_annotations):
             num_args = len(args_node.kwonlyargs)
             kwonlyargs_annotations = annotations[
-                annotation_offset : annotation_offset + num_args
-            ]
+                                     annotation_offset: annotation_offset + num_args
+                                     ]
 
         result.append(
             _format_args(

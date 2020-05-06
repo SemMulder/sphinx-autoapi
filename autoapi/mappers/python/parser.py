@@ -5,6 +5,7 @@ import sys
 
 import astroid
 from . import astroid_utils
+from .astroid_utils import get_full_basename
 
 
 class Parser(object):
@@ -174,12 +175,19 @@ class Parser(object):
         if isinstance(node, astroid.AsyncFunctionDef):
             properties.append("async")
 
-        return_annotation = None
+        return_annotation_node = None
         if getattr(node, "returns", None):
-            return_annotation = node.returns.as_string()
+            return_annotation_node = node.returns
         # Python 2 has no support for type annotations, so use getattr
         elif getattr(node, "type_comment_returns", None):
-            return_annotation = node.type_comment_returns.as_string()
+            return_annotation_node = node.type_comment_returns
+
+        return_annotation = None
+        if return_annotation_node:
+            try:
+                get_full_basename(return_annotation_node, return_annotation_node.as_string())
+            except astroid.AstroidError:
+                return_annotation = return_annotation_node.as_string()
 
         arg_string = astroid_utils.format_args(node.args)
 
